@@ -1,61 +1,77 @@
-<script>
-let tronWeb;
-const CONTRACT = "TRtajVqpr8g2YAhCUvYg7g2jksbxxacxoh";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Tron Token Transfer</title>
+</head>
+<body>
 
-// Connect wallet with permission request
-async function connectWallet() {
-    try {
-        // request permission
-        if (window.tronLink) {
-            await window.tronLink.request({ method: 'tron_requestAccounts' });
-        }
+  <h2>Transfer Tron Tokens</h2>
+  <button onclick="connectWallet()">Connect Wallet</button>
+  <p id="wallet">Not connected to wallet yet</p>
 
-        // check tronWeb
-        if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
-            tronWeb = window.tronWeb;
+  <h3>Contract Settings</h3>
+  <label for="contractAddress">Contract Address:</label>
+  <input type="text" id="contractAddress" placeholder="Contract Address (TRtajVqpr8g2YAhCUvYg7g2jksbxxacxoh)" />
 
-            document.getElementById("wallet").innerText =
-                "Connected: " + tronWeb.defaultAddress.base58;
-        } else {
-            alert("TronLink not detected. Please reload.");
-        }
+  <label for="receiverAddress">Receiver Address:</label>
+  <input type="text" id="receiverAddress" placeholder="Receiver Address" />
 
-    } catch (e) {
-        alert("User rejected connection or TronLink not working");
+  <h3>Token Transfer</h3>
+  <label for="amount">Amount:</label>
+  <input type="number" id="amount" placeholder="Amount of TRX to transfer" />
+
+  <button onclick="transferTokens()">Transfer Tokens</button>
+
+  <script src="https://cdn.jsdelivr.net/npm/tron-web3@1.5.0/dist/tronweb.min.js"></script>
+  <script>
+    let tronWeb;
+    let contractAddress;
+    let receiverAddress;
+    let amount;
+
+    function connectWallet() {
+      tronWeb = new TronWeb({
+        fullNode: 'https://api.trongrid.com',
+        solidityNode: 'https://api.trongrid.com',
+        eventServer: 'https://api.trongrid.com',
+      });
+
+      const account = tronWeb.tron.defaultAccount;
+      if (account) {
+        document.getElementById('wallet').innerHTML = account;
+        contractAddress = document.getElementById('contractAddress').value;
+        receiverAddress = document.getElementById('receiverAddress').value;
+        amount = document.getElementById('amount').value;
+      } else {
+        document.getElementById('wallet').innerHTML = 'Not connected to wallet yet';
+      }
     }
-}
 
-// Send token
-async function sendToken() {
-    try {
-        if (!tronWeb) {
-            alert("Connect wallet first");
-            return;
-        }
+    function transferTokens() {
+      if (!tronWeb || !contractAddress || !receiverAddress || !amount) {
+        alert('Please connect wallet and fill in contract address, receiver address and amount');
+        return;
+      }
 
-        const to = document.getElementById("to").value;
-        const amount = document.getElementById("amount").value;
-
-        const contract = await tronWeb.contract().at(CONTRACT);
-
-        document.getElementById("status").innerText = "Sending...";
-
-        const tx = await contract.transfer(to, amount).send({
-            feeLimit: 10000000
-        });
-
-        document.getElementById("status").innerText =
-            "Success TX: " + tx;
-
-    } catch (e) {
-        document.getElementById("status").innerText =
-            "Error: " + e.message;
+      const contract = tronWeb.tron.contract(contractAddress, (tronWeb.tron.getAbiFromAddress(contractAddress)));
+      contract.createTransaction({
+        to: receiverAddress,
+        value: tronWeb.tron.toSun(amount),
+        feeLimit: 1000000,
+      })
+      .then((tx) => {
+        return tronWeb.tron.sendTransaction(tx);
+      })
+      .then((txHash) => {
+        console.log('Transaction hash:', txHash);
+        alert('Tokens transferred successfully!');
+      })
+      .catch((error) => {
+        console.error('Error:', error);
+        alert('Error transferring tokens');
+      });
     }
-}
-
-// auto fill
-window.onload = function () {
-    document.getElementById("to").value =
-        "TNvLsEeNjM4ZVkZJLEZR8Sm3CKWfWWR5kn";
-};
-</script>
+  </script>
+</body>
+</html>
