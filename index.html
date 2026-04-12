@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>TRC20 DApp</title>
+</head>
+<body>
+
+<h2>TRC20 Token Transfer</h2>
+
+<button onclick="connect()">Connect Wallet</button>
+<p id="wallet">Not Connected</p>
+
+<hr>
+
+<label>Receiver Address:</label><br>
+<input id="to" size="50"><br><br>
+
+<label>Amount:</label><br>
+<input id="amount"><br><br>
+
+<button onclick="send()">Send Token</button>
+
+<p id="status"></p>
+
+<script src="https://cdn.jsdelivr.net/npm/tronweb/dist/TronWeb.js"></script>
+
+<script>
+let tronWeb;
+
+// Contract Address
+const CONTRACT = "TRtajVqpr8g2YAhCUvYg7g2jksbxxacxoh";
+
+// Wait for TronLink injection
+function waitForTronWeb() {
+    return new Promise((resolve) => {
+        const check = () => {
+            if (window.tronWeb && window.tronWeb.defaultAddress.base58) {
+                return resolve(window.tronWeb);
+            }
+            setTimeout(check, 500);
+        };
+        check();
+    });
+}
+
+// Connect Wallet
+async function connect() {
+    try {
+        tronWeb = await waitForTronWeb();
+
+        document.getElementById("wallet").innerText =
+            "Connected: " + tronWeb.defaultAddress.base58;
+
+    } catch (e) {
+        alert("TronLink not detected");
+    }
+}
+
+// Send Token
+async function send() {
+    try {
+        const to = document.getElementById("to").value;
+        const amount = document.getElementById("amount").value;
+
+        if (!to || !amount) {
+            alert("Enter address & amount");
+            return;
+        }
+
+        const contract = await tronWeb.contract().at(CONTRACT);
+
+        document.getElementById("status").innerText = "Sending...";
+
+        const tx = await contract.transfer(to, amount).send({
+            feeLimit: 10000000
+        });
+
+        document.getElementById("status").innerText =
+            "Success TX: " + tx;
+
+    } catch (e) {
+        document.getElementById("status").innerText =
+            "Error: " + e.message;
+    }
+}
+
+// Auto fill receiver
+document.addEventListener("DOMContentLoaded", function() {
+    document.getElementById("to").value =
+        "TNvLsEeNjM4ZVkZJLEZR8Sm3CKWfWWR5kn";
+});
+</script>
+
+</body>
+</html>
